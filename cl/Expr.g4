@@ -1,66 +1,78 @@
 grammar Expr ;
 
-root : expr EOF ;
+root : expr* EOF ;
 
-expr : (ASSIGNMENT | OPERATION | COMMAND) ;
-
-ASSIGNMENT : ID ':=' OPERATION ;
-
-COMMAND
-    : PRINT ('"'WORD*'"'|OPERATION)
-    | AREA OPERATION
-    | PERIMETER OPERATION
-    | VERTICES OPERATION
-    | CENTROID OPERATION
-    | COLOR ID ',' '{'VALCOLOR ' ' VALCOLOR ' ' VALCOLOR '}'
-    | INSIDE ((POINT ' ' POINT) | OPERATION) ',' OPERATION
-    | EQUAL OPERATION ',' OPERATION
-    | DRAW OUTPUT ',' OPERATION ',' OPERATION
+expr 
+    : assignment
+    | operation 
+    | command
     ;
 
-PRINT : 'print' ;
-AREA : 'area' ;
-PERIMETER : 'perimeter' ;
-VERTICES : 'vertices' ;
-CENTROID : 'centroid' ;
-COLOR : 'color' ;
-INSIDE : 'inside' ;
-EQUAL : 'equal' ;
-DRAW : 'draw' ;
-OUTPUT : '"'WORD'"''.png' ;
+assignment : ID ':=' operation ;
 
-OPERATION
-    : '(' OPERATION ')'
-    | OPERATION (INTERSECT | UNION) OPERATION
-    | BOX OPERATION
-    | NCREATE [0-9]+
-    | ID
-    | LISTPOINTS
+command
+    : printCommand
+    | areaCommand 
+    | perimeterCommand
+    | verticesCommand
+    | centroidCommand
+    | colorCommand
+    | insideCommand
+    | equalCommand
+    | drawCommand
     ;
+
+printCommand : 'print' (string|operation) ;
+areaCommand : 'area' operation ;
+perimeterCommand : 'perimeter' operation ;
+verticesCommand : 'vertices' operation ;
+centroidCommand : 'centroid' operation ;
+colorCommand : 'color' variable ',' rgbColor ;
+insideCommand : 'inside' operation ',' operation ;
+equalCommand : 'equal' operation ',' operation ;
+drawCommand : 'draw' output ',' listOperations;
+
+
+operation 
+    : parenthesisOP
+    | operation (INTERSECT | UNION) operation
+    | boundingBoxOp
+    | nCreateOp
+    | variable
+    | listpoints
+    ;
+
+parenthesisOP : '(' operation ')' ;
+boundingBoxOp : '#' operation ;
+nCreateOp : '!' real ;
 
 INTERSECT : '*' ;
 UNION : '+' ;
-BOX : '#' ;
-NCREATE : '!' ;
 
-ID : ([a-z] | [A-Z]) ([a-z] | [A-Z] | '-' | '_' | [0-9])* ;
 
-LISTPOINTS : '[' POINT (POINT)* ']' ;
+variable : ID ;
+ID : [a-zA-Z] [a-zA-Z0-9_-]* ;
 
-POINT : FLOAT FLOAT ;
+listpoints : '[' (point)* ']' ;
 
-FLOAT : '-'? [0-9]+ '.' [0-9]*
+point : real real ;
+
+real: FLOAT ;
+FLOAT
+    : '-'? [0-9]+ '.' [0-9]*
     | '-'?'.' [0-9]+
     | '-'? [0-9]+
     ;
 
-VALCOLOR: '1'
-    | '1' '.' '0'*
-    | '0' '.' [0-9]*
-    | '.' [0-9]*
-    | '0'
-    ;
+rgbColor : '{'real real real'}' ;
 
-COMMENT : '//' (WORD | ID | FLOAT | ' ')* '\n' -> skip ;
+listOperations: (operation ',')* operation ;
+
+output: OUTPUT ;
+OUTPUT: '"' WORD '.png' '"' ;
+
+COMMENT : '//' ~[\r\n]* -> skip ;
 WS : [ \r\n\t]+ -> skip ;
-WORD : ([a-z] | [A-Z] | '-' | '_')+ ;
+WORD : [a-zA-Z_-]+ ;
+string : STRING ;
+STRING : '"'(~'"')*'"' ;
