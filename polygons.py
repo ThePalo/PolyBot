@@ -84,7 +84,7 @@ class ConvexPolygon:
     def __str__(self):
         s = ''
         for p in self.vertices:
-            s += "("+str(p[0]) + " " + str(p[1])+")  "
+            s += ("%.3f %.3f " % (p[0], p[1]))
         return s
     
     
@@ -200,6 +200,14 @@ class ConvexPolygon:
                 return False
         return True
 
+    # True if polygon Poly and instance polygon are equal
+    # As all polygons are sorted, if equal -> must have same points at same position
+    def is_equal (self, Poly):
+        if self.get_n_vertices() != Poly.get_n_vertices(): return False
+        for i in range(self.get_n_vertices()):
+            if self.get_vertex(i) != Poly.get_vertex(i):
+                return False
+        return True
     
     # ------------------ OPERATE FUNCTIONS ------------------
     
@@ -288,9 +296,10 @@ class ConvexPolygon:
             return new_p
 
         for P in list_P:
-            dib.polygon(reescale(P.get_vertices()), 'White', P.get_color())
+            rgb = tuple(int(255*x) for x in P.get_color())
+            dib.polygon(reescale(P.get_vertices()), 'White', rgb)
 
-        img.save(output + '.png')
+        img.save(output)
 
 
         
