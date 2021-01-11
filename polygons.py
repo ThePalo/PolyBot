@@ -74,16 +74,23 @@ class ConvexPolygon:
     # ------------------ INIT CLASS FUNCTIONS ------------------
 
     # Init instance given a set of points
-    def __init__(self, points):
-        self.color = (0,0,0)
-        if len(points) < 3:
+    def __init__(self, points, color = (0,0,0)):
+        self.color = color
+        if len(points) == 0: 
+            self.vertices = []
+        elif len(points) == 1:
             self.vertices = points
-        else: 
+        else:
             self.vertices = ConvexPolygon.convex_hull(points)
+            
     
+    # Print in clockwise order
+    # Therefore, it prints first position and then reversed list
+    # (because it's ordered counter-clockwise)
     def __str__(self):
-        s = ''
-        for p in self.vertices:
+        if self.get_n_vertices() == 0: return "Empty"
+        s = ""
+        for p in self.get_vertices_clockwise():
             s += ("%.3f %.3f " % (p[0], p[1]))
         return s
     
@@ -97,6 +104,12 @@ class ConvexPolygon:
     # Get all vertices
     def get_vertices(self):
         return self.vertices
+
+    # Get all vertices
+    def get_vertices_clockwise(self):
+        clock = self.vertices[:]
+        if len(clock) <= 1: return clock
+        return clock[:1] + list(reversed(clock[1:]))
     
     # Get vertex i
     def get_vertex(self, i):
@@ -138,6 +151,7 @@ class ConvexPolygon:
     
     # Get centroid of polygon
     def get_centroid(self):
+        if self.get_n_vertices() == 0: return None
         cx = cy = 0.0
         det = tempDet = 0.0
         j = 0
@@ -181,6 +195,7 @@ class ConvexPolygon:
     # Looks if point is at left of each continuous pair of vertices
     def is_point_inside(self, p):
         n = self.get_n_vertices()
+        if n == 0: return False
         if n < 2: 
             if self.get_vertex(0) == p: return True
             return False
@@ -194,6 +209,7 @@ class ConvexPolygon:
     # True if polygon Poly is inside it
     # Looks if each vertex of Poly is inside it
     def is_polygon_inside (self, Poly):
+        if Poly.get_n_vertices() == 0: return False
         points = Poly.get_vertices()
         for p in points:
             if not self.is_point_inside(p):
@@ -275,9 +291,8 @@ class ConvexPolygon:
 
     # Draw polygon with its color
     # Re-escale polygon to git a 400x400px image
-    # Save imatge with name output.png
-    # FALTA REESCALAR AMB XMAX I YMAX!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    def draw(list_P, output):
+    # Save imatge with name output or in buffer
+    def draw(list_P, output, buff = False):
         points = []
         for P in list_P:
             points += P.get_vertices()
@@ -285,19 +300,42 @@ class ConvexPolygon:
         x_max = max(points, key=lambda p: p[0])[0]
         y_min = min(points, key=lambda p: p[1])[1]
         y_max = max(points, key=lambda p: p[1])[1]
-        
+        x_size = x_max - x_min
+        y_size = y_max - y_min
+
         img = Image.new('RGB', (400, 400), 'White')
         dib = ImageDraw.Draw(img)
 
-        def reescale(points):
-            new_p = []
-            for p in points:
-                new_p.append(((399*(p[0]-x_min)/(x_max-x_min)),(399*(p[1]-y_min)/(y_max-y_min))))
-            return new_p
+        def move(list_P, orig, end):
+            inc_x = end[0] - orig[0]
+            inc_y = end[1] - orig[1]
+            new_polygons = []
+            for poly in list_P :
+                points = [(p[0]+ inc_x, p[1] + inc_y) for p in poly.get_vertices()]
+                new_polygons.append(ConvexPolygon(points,poly.get_color()))
+            return new_polygons
 
-        for P in list_P:
-            rgb = tuple(int(255*x) for x in P.get_color())
-            dib.polygon(reescale(P.get_vertices()), 'White', rgb)
+        def rescale(list_P):
+            max_size = max(x_size, y_size)
+            scale = 398/max_size
+            new_polygons = []
+            for poly in list_P :
+                points = [(p[0] * scale, p[1] * scale) for p in poly.get_vertices()]
+                new_polygons.append(ConvexPolygon(points,poly.get_color()))
+            return new_polygons
+
+        def transform(list_P):
+            box = ConvexPolygon.bounding_box(list_P)
+            list_P = move(list_P, box.get_centroid(), (0,0))
+            list_P = rescale(list_P)
+            list_P = move(list_P, (0,0), ((int(398/2), int(398/2))))
+            return list_P
+
+        list_P = transform(list_P)
+        for poly in list_P:
+            rgb = tuple(int(255*x) for x in poly.get_color())
+            points = [(p[0], 398 - p[1]) for p in poly.get_vertices()]
+            dib.polygon(points, outline = rgb)
 
         img.save(output)
 

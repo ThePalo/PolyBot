@@ -12,11 +12,20 @@ from polygons import ConvexPolygon
 
 class EvalVisitor(ExprVisitor):
 
-    def __init__(self):
-        self.dic = {}
+    def __init__(self, dictionary = {}):
+        self.dic = dictionary
+        self.msg = ""
+
+    def getMsg(self):
+        return self.msg
+    
+    def getDic():
+        return self.dic
+    
     
     # Visit a parse tree produced by ExprParser#root.
     def visitRoot(self, ctx:ExprParser.RootContext):
+        self.msg = ""
         return self.visitChildren(ctx)
 
 
@@ -39,32 +48,45 @@ class EvalVisitor(ExprVisitor):
     # Visit a parse tree produced by ExprParser#printCommand.
     def visitPrintCommand(self, ctx:ExprParser.PrintCommandContext):
         l = [n for n in ctx.getChildren()]
-        print (self.visit(l[1]))
+        s = self.visit(l[1])
+        print (s)
+        self.msg += '\n' + str(s)
 
 
     # Visit a parse tree produced by ExprParser#areaCommand.
     def visitAreaCommand(self, ctx:ExprParser.AreaCommandContext):
         l = [n for n in ctx.getChildren()]
-        print ("%.3f" % self.visit(l[1]).get_area())
+        s = "%.3f" % self.visit(l[1]).get_area()
+        print (s)
+        self.msg += '\n' + s
 
 
     # Visit a parse tree produced by ExprParser#perimeterCommand.
     def visitPerimeterCommand(self, ctx:ExprParser.PerimeterCommandContext):
         l = [n for n in ctx.getChildren()]
-        print ("%.3f" % self.visit(l[1]).get_perimeter())
+        s = "%.3f" % self.visit(l[1]).get_perimeter()
+        print (s)
+        self.msg += '\n' + s
 
 
     # Visit a parse tree produced by ExprParser#verticesCommand.
     def visitVerticesCommand(self, ctx:ExprParser.VerticesCommandContext):
         l = [n for n in ctx.getChildren()]
-        print (self.visit(l[1]).get_n_vertices())
+        s = self.visit(l[1]).get_n_vertices()
+        print (s)
+        self.msg += '\n' + str(s)
 
 
     # Visit a parse tree produced by ExprParser#centroidCommand.
     def visitCentroidCommand(self, ctx:ExprParser.CentroidCommandContext):
         l = [n for n in ctx.getChildren()]
         p = self.visit(l[1]).get_centroid()
-        print ("%.3f %.3f" % (p[0], p[1]))
+        if p != None:
+            s = "%.3f %.3f" % (p[0], p[1])
+        else :
+            s = "None"
+        print (s)
+        self.msg += '\n' + s
 
 
     # Visit a parse tree produced by ExprParser#colorCommand.
@@ -78,8 +100,10 @@ class EvalVisitor(ExprVisitor):
         l = [n for n in ctx.getChildren()]
         if self.visit(l[3]).is_polygon_inside(self.visit(l[1])) == True:
             print("Yes")
+            self.msg += '\n' + "Yes"
         else: 
             print ("No")
+            self.msg += '\n' + "No"
 
 
     # Visit a parse tree produced by ExprParser#equalCommand.
@@ -87,8 +111,10 @@ class EvalVisitor(ExprVisitor):
         l = [n for n in ctx.getChildren()]
         if self.visit(l[3]).is_equal(self.visit(l[1])) == True:
             print("Yes")
+            self.msg += '\n' + "Yes"
         else: 
             print ("No")
+            self.msg += '\n' + "No"
 
 
     # Visit a parse tree produced by ExprParser#drawCommand.
@@ -96,7 +122,8 @@ class EvalVisitor(ExprVisitor):
         l = [n for n in ctx.getChildren()]
         list_P = self.visit(l[3])
         output = self.visit(l[1])
-        ConvexPolygon.draw(list_P, output)
+        ConvexPolygon.draw(list_P, output, buff=True)
+        self.msg = "draw " + output
 
 
     # Visit a parse tree produced by ExprParser#operation.
