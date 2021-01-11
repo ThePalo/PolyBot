@@ -11,6 +11,16 @@ class ConvexPolygon:
     
     # ------------------ AUXILIAR FUNCTIONS ------------------
 
+    # Print in clockwise order
+    # Therefore, it prints first position and then reversed list
+    # (because it's ordered counter-clockwise)
+    def __str__(self):
+        if self.get_n_vertices() == 0: return "Empty"
+        s = ""
+        for p in self.get_vertices_clockwise():
+            s += ("%.3f %.3f " % (p[0], p[1]))
+        return s
+
     # Find orientation of ordered triplet of points
     # == 0 --> Colinear
     # > 0 --> Clockwise
@@ -44,7 +54,7 @@ class ConvexPolygon:
         points.sort(key=lambda p: (p[0], p[1]))
         points = points[:1] + sorted(points[1:], key=cmp_to_key(compare))
         
-        # If same polar angle --> take farthest point anf delete rest
+        # If same polar angle --> take farthest point and delete rest
         def delete_same_slot(points):
             p0 = points[0]
             new_p = []
@@ -82,18 +92,7 @@ class ConvexPolygon:
             self.vertices = points
         else:
             self.vertices = ConvexPolygon.convex_hull(points)
-            
-    
-    # Print in clockwise order
-    # Therefore, it prints first position and then reversed list
-    # (because it's ordered counter-clockwise)
-    def __str__(self):
-        if self.get_n_vertices() == 0: return "Empty"
-        s = ""
-        for p in self.get_vertices_clockwise():
-            s += ("%.3f %.3f " % (p[0], p[1]))
-        return s
-    
+
     
     # ------------------ GETTERS FUNCTIONS ------------------
 
@@ -127,7 +126,7 @@ class ConvexPolygon:
     def get_n_vertices(self):
         return len(self.vertices)
     
-    # Get perimeter of polygon
+    # Get perimeter of polygon. Cost: O(n)
     def get_perimeter(self):
         p = 0.0
         n = self.get_n_vertices()
@@ -137,7 +136,7 @@ class ConvexPolygon:
         p += ConvexPolygon.__diagonal(self.vertices[-1], self.vertices[0])
         return p
 
-    # Get area of polygon
+    # Get area of polygon. Cost: O(n)
     def get_area(self):
         a = 0.0
         n = self.get_n_vertices()
@@ -149,14 +148,18 @@ class ConvexPolygon:
              (self.get_vertex_y(-1) * self.get_vertex_x(0))
         return abs(0.5*a)
     
-    # Get centroid of polygon
+    # Get centroid of polygon. Cost: O(n)
     def get_centroid(self):
-        if self.get_n_vertices() == 0: return None
+        n = self.get_n_vertices()
+        if n == 0: return None
+        if n == 1: return self.get_vertex(0)
+        if n == 2: 
+            cx = (self.get_vertex_x(0) + self.get_vertex_x(1))/2.0
+            cy = (self.get_vertex_y(0) + self.get_vertex_y(1))/2.0
+            return (cx,cy)
         cx = cy = 0.0
         det = tempDet = 0.0
         j = 0
-        n = self.get_n_vertices()
-        if n < 3: return 0
         for i in range (n-1):
             tempDet = (self.get_vertex_x(i) * self.get_vertex_y(i+1)) - \
                       (self.get_vertex_y(i) * self.get_vertex_x(i+1))
@@ -176,6 +179,7 @@ class ConvexPolygon:
 
     # ------------------ SETTERS FUNCTIONS ------------------
 
+    # Set color of polygon
     def set_color(self, color):
         self.color = color
 
@@ -183,6 +187,7 @@ class ConvexPolygon:
     # ------------------ QUERY FUNCTIONS ------------------
 
     # True if polygon is regular (otherwise false)
+    # Looks if each edge has same lenght. Cost: O(n)
     def is_regular(self):
         n = self.get_n_vertices()
         dist = ConvexPolygon.__diagonal(self.vertices[-1], self.vertices[0])
@@ -191,13 +196,21 @@ class ConvexPolygon:
                 return False
         return True
 
-    # True if point is inside polygon
-    # Looks if point is at left of each continuous pair of vertices
+    # True if point is inside polygon. 
+    # Looks if point is at left of each continuous pair of vertices. Cost: O(n)
     def is_point_inside(self, p):
         n = self.get_n_vertices()
         if n == 0: return False
-        if n < 2: 
+        if n == 1: 
             if self.get_vertex(0) == p: return True
+            return False
+        if n == 2:
+            dp = ConvexPolygon.__leftop(self.get_vertex(0), self.get_vertex(1), p)
+            points = self.get_vertices()
+            x_min = min(points, key=lambda pt: pt[0])[0]
+            x_max = max(points, key=lambda pt: pt[0])[0]
+            if dp == 0 and (x_min <= p[0] <= x_max):
+                return True
             return False
         for i in range(n-1):
             if ConvexPolygon.__leftop(self.get_vertex(i), self.get_vertex(i+1), p) > 0:
@@ -207,7 +220,7 @@ class ConvexPolygon:
         return True
     
     # True if polygon Poly is inside it
-    # Looks if each vertex of Poly is inside it
+    # Looks if each vertex of Poly is inside it. Cost: O(n*m)
     def is_polygon_inside (self, Poly):
         if Poly.get_n_vertices() == 0: return False
         points = Poly.get_vertices()
@@ -217,7 +230,7 @@ class ConvexPolygon:
         return True
 
     # True if polygon Poly and instance polygon are equal
-    # As all polygons are sorted, if equal -> must have same points at same position
+    # As all polygons are sorted, if equal -> must have same points at same position. Cost: O(n)
     def is_equal (self, Poly):
         if self.get_n_vertices() != Poly.get_n_vertices(): return False
         for i in range(self.get_n_vertices()):
@@ -225,11 +238,11 @@ class ConvexPolygon:
                 return False
         return True
     
-    # ------------------ OPERATE FUNCTIONS ------------------
+    # ------------------ OPERATION FUNCTIONS ------------------
     
     # Convex union of a list of polygons
     # Creates a new polygon (union) wich is the result of doing a convex hull of
-    # all points of all polygons
+    # all points of all polygons. Cost: O(n*log(n)) where n is all points of list of Polygons.
     def convex_union (list_P):
         points = []
         for P in list_P:
@@ -237,7 +250,7 @@ class ConvexPolygon:
         return ConvexPolygon(points)
 
     # Creates a bounding box paralel to x and y axis
-    # Returns a bounding box polygon
+    # Returns a bounding box polygon. Cost: O(n*log(n))
     def bounding_box(list_P):
         points = []
         for P in list_P:
@@ -250,10 +263,15 @@ class ConvexPolygon:
         new_p = [(x_min, y_min), (x_max, y_min), (x_max, y_max), (x_min, y_max)]
         return ConvexPolygon(new_p)
     
+
+    # Computes the intersection of two polygons. Cost: O(n*m)
     def intersect(P, Q):
 
         subjectPolygon = P.get_vertices()
         clipPolygon = Q.get_vertices()
+
+        if len(subjectPolygon) == 0 or len(clipPolygon) == 0:
+            return ConvexPolygon([])
 
         def inside(p):
             return ConvexPolygon.__leftop(cp1, cp2, p) <= 0
@@ -290,8 +308,9 @@ class ConvexPolygon:
 
     # ------------------ DRAW FUNCTIONS ------------------
 
-    # Draw polygon with its color
-    # Re-escale polygon to git a 400x400px image
+    # Draw list of polygons (each with its color). Re-escale polygons to fit a 400x400px image
+    # Returns an object image that will be stored (if it's necessary) by other class. Cost: O(n*log(n))
+    # where n is all points of list of Polygons.
     def draw(list_P):
         points = []
         for P in list_P:
@@ -323,7 +342,9 @@ class ConvexPolygon:
                 points = [(p[0] * scale, p[1] * scale) for p in poly.get_vertices()]
                 new_polygons.append(ConvexPolygon(points,poly.get_color()))
             return new_polygons
-
+        
+        # This function is designed to move each polygon to rescale them preserving the
+        # original aspect ratio. Then, it moves again to fit them to the 400x400px image
         def transform(list_P):
             box = ConvexPolygon.bounding_box(list_P)
             list_P = move(list_P, box.get_centroid(), (0,0))
@@ -338,24 +359,3 @@ class ConvexPolygon:
             dib.polygon(points, outline = rgb)
 
         return img
-
-
-        
-if __name__ == "__main__":
-    P = ConvexPolygon([(0, 0), (1, 1), (1,0), (0,1)])
-    Q = ConvexPolygon([(0,1), (3,0), (2,2)])
-
-    print("Perimeter: " + str(P.get_perimeter()))
-    print("Area: " + str(P.get_area()))
-    print("Centroid: " + str(P.get_centroid()))
-    print("Is regular?: " + str(P.is_regular()))
-    print("Is Q inside P: " + str(P.is_polygon_inside(Q)))
-    print("Is P inside Q: " + str(Q.is_polygon_inside(P)))
-    U = ConvexPolygon.convex_union([P,Q])
-    print(U)
-    B = ConvexPolygon.bounding_box([P,Q])
-    print(B)
-    I = ConvexPolygon.intersect(P,Q) 
-    print(I)
-    Q.set_color((0,1,0))
-    ConvexPolygon.draw([Q,P], "hola")
