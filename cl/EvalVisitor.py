@@ -5,6 +5,8 @@ else:
     from ExprParser import ExprParser
     from ExprVisitor import ExprVisitor
 
+import io
+
 import random
 import sys
 sys.path.append("..")
@@ -12,9 +14,10 @@ from polygons import ConvexPolygon
 
 class EvalVisitor(ExprVisitor):
 
-    def __init__(self, dictionary = {}):
+    def __init__(self, dictionary = {}, buff=False):
         self.dic = dictionary
-        self.msg = ""
+        self.msg = None
+        self.buff = buff
 
     def getMsg(self):
         return self.msg
@@ -122,8 +125,14 @@ class EvalVisitor(ExprVisitor):
         l = [n for n in ctx.getChildren()]
         list_P = self.visit(l[3])
         output = self.visit(l[1])
-        ConvexPolygon.draw(list_P, output, buff=True)
-        self.msg = "draw " + output
+        img = ConvexPolygon.draw(list_P)
+        if self.buff == True:
+            file = io.BytesIO()
+            self.msg = (file, output)
+            img.save(file, format='png')
+            file.seek(0)
+        else:
+            img.save(output)
 
 
     # Visit a parse tree produced by ExprParser#operation.
@@ -135,7 +144,7 @@ class EvalVisitor(ExprVisitor):
             if l[1].getText() == '+':
                 return ConvexPolygon.convex_union([self.visit(l[0]), self.visit(l[2])])
             else:
-                return ConvexPolygon.convex_union([self.visit(l[0]), self.visit(l[2])])
+                return ConvexPolygon.intersect(self.visit(l[0]), self.visit(l[2]))
 
 
     # Visit a parse tree produced by ExprParser#parenthesisOP.

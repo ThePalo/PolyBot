@@ -242,6 +242,7 @@ class ConvexPolygon:
         points = []
         for P in list_P:
             points += P.get_vertices()
+        if len(points) == 0: return ConvexPolygon([])
         x_min = min(points, key=lambda p: p[0])[0]
         x_max = max(points, key=lambda p: p[0])[0]
         y_min = min(points, key=lambda p: p[1])[1]
@@ -255,7 +256,7 @@ class ConvexPolygon:
         clipPolygon = Q.get_vertices()
 
         def inside(p):
-            return(cp2[0]-cp1[0])*(p[1]-cp1[1]) > (cp2[1]-cp1[1])*(p[0]-cp1[0])
+            return ConvexPolygon.__leftop(cp1, cp2, p) <= 0
  
         def computeIntersection():
             dc = [ cp1[0] - cp2[0], cp1[1] - cp2[1] ]
@@ -291,8 +292,7 @@ class ConvexPolygon:
 
     # Draw polygon with its color
     # Re-escale polygon to git a 400x400px image
-    # Save imatge with name output or in buffer
-    def draw(list_P, output, buff = False):
+    def draw(list_P):
         points = []
         for P in list_P:
             points += P.get_vertices()
@@ -337,7 +337,7 @@ class ConvexPolygon:
             points = [(p[0], 398 - p[1]) for p in poly.get_vertices()]
             dib.polygon(points, outline = rgb)
 
-        img.save(output)
+        return img
 
 
         

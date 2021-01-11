@@ -34,17 +34,17 @@ def tr(update, context):
         parser = ExprParser(token_stream)
         tree = parser.root()
 
-        visitor = EvalVisitor(context.user_data)
+        visitor = EvalVisitor(dictionary=context.user_data, buff=True)
         visitor.visit(tree)
         msg_eval = visitor.getMsg()
 
-        if msg_eval != "":
-            if msg_eval.split()[0] == "draw":
-                output = msg_eval.split()[1]
-                context.bot.send_photo(chat_id=update.message.chat_id, \
-                photo=open(output, 'rb'))
-            else:
-                context.bot.send_message(chat_id=update.message.chat_id, text=msg_eval)
+        if type(msg_eval) is tuple:
+            context.bot.send_photo(\
+                chat_id=update.message.chat_id,\
+                photo=msg_eval[0],\
+                caption=msg_eval[1])
+        elif type(msg_eval) is str and msg_eval != "":
+            context.bot.send_message(chat_id=update.message.chat_id, text=msg_eval)
 
 
 
